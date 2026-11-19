@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="正規尺度混合・ガンマポアソン・ベータ二項・複合ポアソンを二段のくじで体験できる統計学習アプリ">
+<meta property="og:title" content="混合分布曼荼羅">
+<meta property="og:description" content="4つの混合分布を「θをひく→Xをひく」で体感。全分散の分解と統計検定1級の出題ポイントつき。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>混合分布曼荼羅</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 曼荼羅（4枚の花弁＋中心）を目次に、選んだ花弁の「θをひく→Xをひく」二段実験台を下に展開 */
+:root{
+  --bg:#F2F3F8; --surface:#FFFFFF; --ink:#1A2142; --muted:#5A6284; --line:#D7DBE9; --soft:#E8EBF5;
+  --lapis:#2C4BA0; --saffron:#B97800; --malachite:#177A5E; --cinnabar:#B33A27;
+  --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --c:var(--lapis);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1329; --surface:#171E3D; --ink:#E6E9F5; --muted:#9AA3C8; --line:#2B3462; --soft:#1F2850;
+  --lapis:#87A2FF; --saffron:#F0B43C; --malachite:#45C99D; --cinnabar:#FF7C64; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1329; --surface:#171E3D; --ink:#E6E9F5; --muted:#9AA3C8; --line:#2B3462; --soft:#1F2850;
+  --lapis:#87A2FF; --saffron:#F0B43C; --malachite:#45C99D; --cinnabar:#FF7C64; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.7}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.3}
+.hero{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:32px;align-items:center}
+.hero svg{width:100%;max-width:380px;height:auto;display:block;margin:0 auto}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:700}
+h1{font-size:clamp(34px,6vw,54px);font-weight:800;letter-spacing:.04em;margin-top:4px}
+.lead{max-width:36em;color:var(--muted);margin:10px 0 18px}
+.core{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:grid;gap:6px}
+.core .row{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.core .k{font-size:12px;color:var(--muted);min-width:7.5em;letter-spacing:.06em}
+.fx{font-family:var(--f-display);font-size:16px;font-weight:600}
+.fx i{font-style:italic}
+.petal{cursor:pointer;transition:opacity .2s}
+.petal:focus{outline:none}
+.petal:focus-visible circle.p{stroke-width:4}
+.mand-text{font-family:var(--f-display);fill:var(--ink);font-weight:800;text-anchor:middle;pointer-events:none}
+.mand-sub{font-family:var(--f-mono);fill:var(--muted);font-size:9.5px;text-anchor:middle;pointer-events:none}
+
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:36px 0 0}
+.tab{font:inherit;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.tab .dot{width:10px;height:10px;border-radius:50%;background:var(--tc)}
+.tab[aria-selected="true"]{border-color:var(--tc);box-shadow:inset 0 0 0 1.5px var(--tc)}
+.tab:focus-visible{outline:2px solid var(--tc);outline-offset:2px}
+
+.panel{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:22px clamp(14px,3vw,28px) 26px}
+.phead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:baseline}
+.phead h2{font-size:clamp(24px,4vw,32px);color:var(--c)}
+.phead .tag{color:var(--muted)}
+.hier{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px 18px}
+.hier span{background:var(--soft);padding:3px 10px;border-radius:6px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 22px;margin:18px 0 6px}
+.ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.ctl output{font-family:var(--f-mono);color:var(--ink);font-weight:600}
+.ctl input[type=range]{width:100%;accent-color:var(--c)}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1.5fr);gap:8px;align-items:stretch;margin-top:10px}
+.cbox{min-width:0}
+.cbox h3{font-size:15px;font-family:var(--f-body);font-weight:700;display:flex;gap:8px;align-items:baseline}
+.cbox h3 small{font-weight:400;color:var(--muted);font-size:12px}
+.step{font-family:var(--f-mono);font-size:11px;color:var(--surface);background:var(--c);border-radius:4px;padding:0 6px}
+canvas{width:100%;display:block}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--c);font-size:26px;font-family:var(--f-display)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-top:4px}
+.legend b{display:inline-block;width:18px;height:10px;margin-right:5px;vertical-align:middle}
+.lg-hist{background:var(--c);opacity:.35}
+.lg-marg{border-top:3px solid var(--c);height:0!important}
+.lg-comp{border-top:2px dashed var(--muted);height:0!important}
+.lg-cond{border-top:1.5px solid var(--ink);opacity:.6;height:0!important}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.btn{font:inherit;font-weight:700;font-size:14px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--c);background:transparent;color:var(--c);cursor:pointer}
+.btn.primary{background:var(--c);color:var(--surface)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.last{font-family:var(--f-mono);font-size:13px;color:var(--ink);background:var(--soft);padding:6px 10px;border-radius:6px;margin-left:auto}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;margin-top:22px}
+.sec h3{font-size:17px;margin-bottom:8px}
+.decomp{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.decomp div{display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:12px;white-space:nowrap;overflow:hidden;color:var(--ink)}
+.d-in{background:color-mix(in srgb,var(--c) 22%,var(--surface))}
+.d-bt{background:color-mix(in srgb,var(--c) 60%,var(--surface))}
+.dnote{font-size:13px;color:var(--muted);margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-top:12px}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--f-mono)}
+th{font-weight:700;color:var(--muted);font-size:12px}
+.formulas{display:grid;gap:8px}
+.formulas .fx{background:var(--soft);padding:6px 10px;border-radius:6px;overflow-x:auto}
+.formulas .lab{font-size:12px;color:var(--muted);letter-spacing:.05em}
+ul.pts{margin:0;padding-left:1.2em;display:grid;gap:6px}
+ul.pts li::marker{color:var(--c)}
+details{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--bg)}
+summary{cursor:pointer;font-weight:700}
+summary:focus-visible{outline:2px solid var(--c)}
+.q{margin:8px 0}
+.ans{border-left:3px solid var(--c);padding-left:12px;color:var(--ink)}
+.ex{margin-top:24px}
+.ex h3{font-size:17px;margin-bottom:4px}
+.ex .exlead{font-size:13px;color:var(--muted);margin:0 0 10px}
+.exgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.excard{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--bg);min-width:0}
+.excard h4{margin:0 0 6px;font-size:15px;font-family:var(--f-display)}
+.excard dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;font-size:13px}
+.excard dt{color:var(--c);font-family:var(--f-mono);font-weight:600}
+.excard dd{margin:0}
+.excard p{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+.clue{margin-top:10px;font-size:13px;background:var(--soft);border-radius:6px;padding:8px 12px}
+.clue b{color:var(--c)}
+footer{margin-top:28px;color:var(--muted);font-size:13px}
+@media (max-width:760px){
+  .hero{grid-template-columns:1fr}
+  .stage{grid-template-columns:1fr}
+  .arrow{transform:rotate(90deg);height:18px;font-size:20px}
+  .stage{gap:2px}
+  .legend{font-size:11px;gap:2px 10px}
+  .cbox h3{font-size:14px}
+  .grid2{grid-template-columns:1fr}
+  .last{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <section class="hero">
+    <svg id="mandala" viewBox="0 0 380 380" role="img" aria-label="混合分布曼荼羅：中心に混合の一般形、周りに4つの混合分布"></svg>
+    <div>
+      <div class="eyebrow">統計検定1級 ・ 数理 / 階層モデル</div>
+      <h1>混合分布曼荼羅</h1>
+      <p class="lead">どの混合分布も「まずパラメータ θ を分布からひき、次にその θ で X をひく」という二段のくじです。花弁を選び、くじを実際にひいて、ヒストグラムが理論の周辺分布に収まっていく様子を見てください。</p>
+      <div class="core">
+        <div class="row"><span class="k">周辺分布</span><span class="fx"><i>f</i>(<i>x</i>) = ∫ <i>f</i>(<i>x</i> | θ) π(θ) dθ</span></div>
+        <div class="row"><span class="k">全期待値</span><span class="fx">E[<i>X</i>] = E[ E[<i>X</i> | θ] ]</span></div>
+        <div class="row"><span class="k">全分散</span><span class="fx">V[<i>X</i>] = E[ V[<i>X</i> | θ] ] + V[ E[<i>X</i> | θ] ]</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <section class="panel" id="panel" role="tabpanel">
+    <div class="phead"><h2 id="pName"></h2><span class="tag" id="pTag"></span></div>
+    <div class="hier fx" id="pHier"></div>
+    <div class="controls" id="controls"></div>
+    <div class="stage">
+      <div class="cbox">
+        <h3><span class="step">STEP 1</span><span id="mixTitle"></span></h3>
+        <canvas id="cMix" data-h="230" data-hm="140"></canvas>
+        <div class="legend"><span><b class="lg-marg"></b>混ぜる分布 π(θ)</span><span><b class="lg-cond"></b>直近にひいた θ</span></div>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="cbox">
+        <h3><span class="step">STEP 2</span><span id="margTitle"></span></h3>
+        <canvas id="cMarg" data-h="260" data-hm="190"></canvas>
+        <div class="legend">
+          <span><b class="lg-hist"></b>ひいた X のヒストグラム</span>
+          <span><b class="lg-marg"></b>周辺分布（理論）</span>
+          <span><b class="lg-comp"></b><span id="compLab"></span></span>
+          <span><b class="lg-cond"></b>直近 θ での条件付き分布</span>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="b1">1回ひく</button>
+      <button class="btn" id="b100">100回ひく</button>
+      <button class="btn" id="b2000">2000回ひく</button>
+      <button class="btn" id="bReset">リセット</button>
+      <span class="last" id="last"></span>
+    </div>
+
+    <div class="ex sec">
+      <h3>現実ではこう現れる</h3>
+      <p class="exlead">問題文に分布名は書かれません。「何がばらつくか（θ）」と「何を数える・測るか（X）」を特定しましょう。</p>
+      <div class="exgrid" id="examples"></div>
+      <div class="clue" id="clue"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="sec">
+        <h3>全分散の分解</h3>
+        <div class="decomp" id="decomp"></div>
+        <div class="dnote" id="dnote"></div>
+        <table>
+          <thead><tr><th></th><th>理論</th><th>標本</th></tr></thead>
+          <tbody id="stats"></tbody>
+        </table>
+      </div>
+      <div class="sec">
+        <h3>公式カード</h3>
+        <div class="formulas" id="formulas"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="sec">
+        <h3>1級ではこう出る</h3>
+        <ul class="pts" id="points"></ul>
+      </div>
+      <div class="sec">
+        <h3>確認問題</h3>
+        <div id="quiz"></div>
+      </div>
+    </div>
+  </section>
+  <footer>ひいた値は毎回ランダムです。パラメータを動かすと標本は自動でひき直されます（初期 3000 回）。</footer>
+</div>
+
+<script>
+/* ---------- 数学ユーティリティ ---------- */
+const LG=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+function lgamma(x){if(x<0.5)return Math.log(Math.PI/Math.abs(Math.sin(Math.PI*x)))-lgamma(1-x);x-=1;let a=0.99999999999980993;const t=x+7.5;for(let i=0;i<8;i++)a+=LG[i]/(x+i+1);return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);}
+const lbeta=(a,b)=>lgamma(a)+lgamma(b)-lgamma(a+b);
+const lchoose=(n,k)=>lgamma(n+1)-lgamma(k+1)-lgamma(n-k+1);
+const normPdf=(x,m,v)=>Math.exp(-(x-m)*(x-m)/(2*v))/Math.sqrt(2*Math.PI*v);
+const gammaPdf=(x,k,r)=>x<=0?0:Math.exp(k*Math.log(r)+(k-1)*Math.log(x)-r*x-lgamma(k));
+const invGammaPdf=(v,a,b)=>v<=0?0:Math.exp(a*Math.log(b)-lgamma(a)-(a+1)*Math.log(v)-b/v);
+const tPdf=(x,n)=>Math.exp(lgamma((n+1)/2)-lgamma(n/2))/Math.sqrt(n*Math.PI)*Math.pow(1+x*x/n,-(n+1)/2);
+const poisPmf=(k,l)=>k<0?0:(l===0?(k===0?1:0):Math.exp(k*Math.log(l)-l-lgamma(k+1)));
+const nbPmf=(x,a,p)=>Math.exp(lgamma(x+a)-lgamma(a)-lgamma(x+1)+a*Math.log(p)+x*Math.log(1-p));
+const betaPdf=(t,a,b)=>(t<=0||t>=1)?0:Math.exp((a-1)*Math.log(t)+(b-1)*Math.log(1-t)-lbeta(a,b));
+const binPmf=(x,n,p)=>p<=0?(x===0?1:0):p>=1?(x===n?1:0):Math.exp(lchoose(n,x)+x*Math.log(p)+(n-x)*Math.log(1-p));
+const bbPmf=(x,n,a,b)=>Math.exp(lchoose(n,x)+lbeta(x+a,n-x+b)-lbeta(a,b));
+/* 乱数 */
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function rgamma(k,rate){if(k<1)return rgamma(k+1,rate)*Math.pow(Math.random(),1/k);const d=k-1/3,c=1/Math.sqrt(9*d);for(;;){let x,v;do{x=randn();v=1+c*x;}while(v<=0);v=v*v*v;const u=Math.random();if(u<1-0.0331*x*x*x*x||Math.log(u)<0.5*x*x+d*(1-v+Math.log(v)))return d*v/rate;}}
+function knuth(l){const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random();}while(p>L);return k-1;}
+function rpois(l){let x=0;while(l>25){x+=knuth(25);l-=25;}return x+knuth(l);}
+function rbinom(n,p){let x=0;for(let i=0;i<n;i++)if(Math.random()<p)x++;return x;}
+function rbeta(a,b){const g=rgamma(a,1),h=rgamma(b,1);return g/(g+h);}
+const f=(x,d=3)=>!isFinite(x)?"∞":Math.abs(x)>=1000?x.toFixed(0):x.toFixed(d);
+
+/* ---------- 4つの花弁 ---------- */
+const P=[
+{ id:"normal", name:"正規尺度混合", short:["正規","尺度混合"], sub:"→ t分布", color:"--lapis",
+  tag:"分散をランダムにすると裾が重くなる",
+  hier:['<i>X</i> | <i>V</i> ~ N(0, <i>V</i>)','<i>V</i> ~ 逆ガンマ IG(ν/2, ν/2)','⇒ <i>X</i> ~ <i>t</i><sub>ν</sub>'],
+  params:[{id:"nu",label:"自由度 ν",min:1,max:30,step:0.5,val:4}],
+  discrete:false, thetaDiscrete:false, thetaName:"V", xName:"X",
+  mixTitle:"分散 V をひく", margTitle:"N(0, V) から X をひく",
+  thetaRange:p=>[0,5], mixPdf:(v,p)=>invGammaPdf(v,p.nu/2,p.nu/2), mixCap:p=>null,
+  sampleTheta:p=>1/rgamma(p.nu/2,p.nu/2), sampleX:(v,p)=>Math.sqrt(v)*randn(),
+  xRange:p=>[-6,6], marg:(x,p)=>tPdf(x,p.nu), cond:(x,v,p)=>normPdf(x,0,v),
+  comp:(x,p)=>normPdf(x,0,p.nu>2?p.nu/(p.nu-2):1), compLabel:p=>p.nu>2?"同じ分散の正規分布 N(0, ν/(ν−2))":"標準正規 N(0,1)（ν≤2 は分散なし）",
+  theory:p=>({mean:0,within:p.nu>2?p.nu/(p.nu-2):Infinity,between:0}),
+  dnote:p=>"E[X|V]=0 は V によらないので、成分間の分散は0。混合の効果は分散ではなく尖度（裾の重さ）に現れます。"+(p.nu>4?` 尖度 = 3 + 6/(ν−4) = ${f(3+6/(p.nu-4),2)}（正規は3）。`:" ν≤4 では4次モーメントが発散します。"),
+  formulas:[
+    ["周辺密度",'<i>f</i>(<i>x</i>) = Γ((ν+1)/2) / {√(νπ) Γ(ν/2)} · (1 + <i>x</i>²/ν)<sup>−(ν+1)/2</sup>'],
+    ["同値な表現",'<i>X</i> = <i>Z</i> / √(<i>W</i>/ν),  <i>Z</i> ~ N(0,1),  <i>W</i> ~ χ²<sub>ν</sub>  （<i>V</i> = ν/<i>W</i>）'],
+    ["分散",'V[<i>X</i>] = E[<i>V</i>] = ν/(ν−2)   (ν > 2)'],
+    ["4次モーメント",'E[<i>X</i>⁴] = 3E[<i>V</i>²]  ⇒ 尖度 = 3E[<i>V</i>²]/E[<i>V</i>]² ≥ 3']],
+  points:[
+    "t分布の定義 Z/√(W/ν) を「分散 V=ν/W の正規を混ぜたもの」と読み替えられるか。積分はガンマ関数の形に帰着させる。",
+    "E[X⁴]=3E[V²] とイェンセンの不等式から、どんな尺度混合も尖度 ≥ 3（裾が重い）。証明問題で頻出の一行。",
+    "汚染正規 (1−ε)N(0,1)+εN(0,σ²) は V が2点分布の尺度混合。頑健推定・外れ値の文脈で応用に出る。",
+    "ν→∞ で V→1 に集中し、t分布は標準正規へ近づく。スライダーで確かめよう。"],
+  examples:[
+    ["株価の日次収益率","その日の市場の荒れ具合（ボラティリティ）","その日の収益率","日ごとに分散が変わるため、全体では正規より裾が重い。暴落が正規分布の想定より頻繁に起きる理由。"],
+    ["ときどき外れ値が出る測定","その回の測定精度（通常 or 不調）","測定誤差","10回に1回だけ分散が大きい → 汚染正規分布。頑健推定の題材。"],
+    ["小標本の t 統計量","未知の分散を推定値で置き換えた揺らぎ","(X̄−μ)/(S/√n)","t 分布そのもの。尺度混合の最も身近な例。"]],
+  clue:"<b>手がかり</b>：連続量で平均は共通、でも「ばらつきの大きさ」が場面ごとに違う。尖度が3より大きい。",
+  quiz:{q:"X | V ~ N(0, V)、V は P(V=1)=0.9, P(V=9)=0.1 の2点分布とする。V[X] と尖度を求めよ。",
+        a:"V[X] = E[V] = 0.9·1 + 0.1·9 = 1.8。E[X⁴] = 3E[V²] = 3(0.9·1 + 0.1·81) = 27。尖度 = 27 / 1.8² = 8.33。正規の3より大きく、10%の外れ値だけで裾がかなり重くなる。"}
+},
+{ id:"gammapois", name:"ガンマ・ポアソン", short:["ガンマ","ポアソン"], sub:"→ 負の二項", color:"--saffron",
+  tag:"発生率を個体ごとにばらつかせると過分散になる",
+  hier:['<i>X</i> | λ ~ Po(λ)','λ ~ Ga(α, β)（β は率）','⇒ <i>X</i> ~ NB(α, <i>p</i> = β/(β+1))'],
+  params:[{id:"a",label:"形状 α",min:0.5,max:20,step:0.5,val:3},{id:"b",label:"率 β",min:0.2,max:5,step:0.1,val:0.6}],
+  discrete:true, thetaDiscrete:false, thetaName:"λ", xName:"X",
+  mixTitle:"発生率 λ をひく", margTitle:"Po(λ) から件数 X をひく",
+  thetaRange:p=>[0,p.a/p.b+4.5*Math.sqrt(p.a)/p.b], mixPdf:(l,p)=>gammaPdf(l,p.a,p.b), mixCap:p=>null,
+  sampleTheta:p=>rgamma(p.a,p.b), sampleX:(l,p)=>rpois(l),
+  xRange:p=>{const m=p.a/p.b,v=m+m/p.b;return[0,Math.min(120,Math.max(8,Math.ceil(m+4.5*Math.sqrt(v))))];},
+  marg:(x,p)=>nbPmf(x,p.a,p.b/(p.b+1)), cond:(x,l,p)=>poisPmf(x,l),
+  comp:(x,p)=>poisPmf(x,p.a/p.b), compLabel:p=>"平均が同じポアソン Po(α/β)",
+  theory:p=>({mean:p.a/p.b,within:p.a/p.b,between:p.a/(p.b*p.b)}),
+  dnote:p=>`成分内 E[λ]=α/β と成分間 V[λ]=α/β² の和。分散/平均 = 1 + 1/β = ${f(1+1/p.b,2)} > 1 が過分散の正体です。`,
+  formulas:[
+    ["周辺確率",'P(<i>X</i>=<i>x</i>) = Γ(<i>x</i>+α) / {Γ(α) <i>x</i>!} · <i>p</i><sup>α</sup> (1−<i>p</i>)<sup><i>x</i></sup>,  <i>p</i> = β/(β+1)'],
+    ["導出の核",'∫ λ<sup><i>x</i>+α−1</sup> e<sup>−(1+β)λ</sup> dλ = Γ(<i>x</i>+α) / (1+β)<sup><i>x</i>+α</sup>'],
+    ["平均・分散",'E[<i>X</i>] = α/β,   V[<i>X</i>] = α/β + α/β²'],
+    ["確率母関数",'G(<i>s</i>) = { <i>p</i> / (1 − (1−<i>p</i>)<i>s</i>) }<sup>α</sup>']],
+  points:[
+    "負の二項分布の導出問題。ガンマ密度の正規化定数を使って λ を積分で消すのが定石。",
+    "ベイズでは λ の事前分布 Ga(α,β) → 観測 x の後の事後分布は Ga(α+x, β+1)。周辺分布 NB は事前予測分布。",
+    "事故件数・来店数など「分散が平均より大きい計数データ」のモデル。応用で過分散の検定・説明に使う。",
+    "α→∞ で α/β を固定するとポアソンに収束（λ のばらつきが消える）。"],
+  examples:[
+    ["ドライバーの年間事故件数","運転者ごとの事故率 λ","1年間の事故件数","事故を起こしやすい人とそうでない人が混在。自動車保険の等級制度の数理的背景。"],
+    ["患者ごとの発作回数","患者ごとの発作の起こりやすさ","観察期間中の発作回数","臨床試験の計数アウトカムで、ポアソン回帰の代わりに負の二項回帰を使う理由。"],
+    ["店舗ごとの来店数・RNA-seq リード数","店舗・遺伝子ごとの平均レベル","カウント","分散が平均を大きく上回るカウントデータの定番モデル。"]],
+  clue:"<b>手がかり</b>：0, 1, 2, … の件数データで、分散 ＞ 平均（過分散）。「率」が個体ごとに異なると書かれている。",
+  quiz:{q:"λ ~ Ga(2, 0.5)（率0.5）、X | λ ~ Po(λ) のとき E[X], V[X], P(X=0) を求めよ。",
+        a:"E[X] = α/β = 4。V[X] = 4 + 2/0.25 = 12。P(X=0) = E[e^{−λ}] = (β/(β+1))^α = (1/3)² = 1/9 ≈ 0.111。P(X=0) はガンマのラプラス変換としても計算できる。"}
+},
+{ id:"betabin", name:"ベータ・二項", short:["ベータ","二項"], sub:"→ ベータ二項", color:"--malachite",
+  tag:"成功確率をばらつかせると二項より広がる",
+  hier:['<i>X</i> | <i>p</i> ~ Bin(<i>n</i>, <i>p</i>)','<i>p</i> ~ Be(<i>a</i>, <i>b</i>)','⇒ <i>X</i> ~ BetaBin(<i>n</i>, <i>a</i>, <i>b</i>)'],
+  params:[{id:"n",label:"試行回数 n",min:1,max:40,step:1,val:20},{id:"a",label:"a",min:0.3,max:20,step:0.1,val:2},{id:"b",label:"b",min:0.3,max:20,step:0.1,val:3}],
+  discrete:true, thetaDiscrete:false, thetaName:"p", xName:"X",
+  mixTitle:"成功確率 p をひく", margTitle:"Bin(n, p) から成功数 X をひく",
+  thetaRange:p=>[0,1], mixPdf:(t,p)=>betaPdf(t,p.a,p.b), mixCap:p=>{let m=0;for(let i=1;i<100;i++)m=Math.max(m,betaPdf(0.03+i*0.0094,p.a,p.b));return m*1.15;},
+  sampleTheta:p=>rbeta(p.a,p.b), sampleX:(t,p)=>rbinom(p.n,t),
+  xRange:p=>[0,p.n], marg:(x,p)=>bbPmf(x,p.n,p.a,p.b), cond:(x,t,p)=>binPmf(x,p.n,t),
+  comp:(x,p)=>binPmf(x,p.n,p.a/(p.a+p.b)), compLabel:p=>"平均が同じ二項 Bin(n, a/(a+b))",
+  theory:p=>{const s=p.a+p.b,m=p.a/s,vp=p.a*p.b/(s*s*(s+1)),ep2=vp+m*m;return{mean:p.n*m,within:p.n*(m-ep2),between:p.n*p.n*vp};},
+  dnote:p=>{const r=1/(p.a+p.b+1);return `級内相関 ρ = 1/(a+b+1) = ${f(r,3)}。分散は二項の 1+(n−1)ρ = ${f(1+(p.n-1)*r,2)} 倍。a=b=1 では X は 0〜n の離散一様。`;},
+  formulas:[
+    ["周辺確率",'P(<i>X</i>=<i>x</i>) = C(<i>n</i>,<i>x</i>) · B(<i>x</i>+<i>a</i>, <i>n</i>−<i>x</i>+<i>b</i>) / B(<i>a</i>,<i>b</i>)'],
+    ["平均",'E[<i>X</i>] = <i>n</i>π,   π = <i>a</i>/(<i>a</i>+<i>b</i>)'],
+    ["分散",'V[<i>X</i>] = <i>n</i>π(1−π) · (<i>a</i>+<i>b</i>+<i>n</i>)/(<i>a</i>+<i>b</i>+1)'],
+    ["事後分布",'<i>p</i> | <i>x</i> ~ Be(<i>a</i>+<i>x</i>, <i>b</i>+<i>n</i>−<i>x</i>)']],
+  points:[
+    "分散はベータ関数で直接計算するより、全分散公式 E[np(1−p)] + V[np] で出すほうが速く安全。",
+    "a=b=1（p が一様）なら P(X=x)=1/(n+1)。ベイズの「ラプラスの継起則」とセットで覚える。",
+    "ベイズの事後予測分布として出題される：Be(a,b) を事前、n 回中 x 回成功を観測、次の m 回の成功数はベータ二項。",
+    "クラスター内で成功が相関する（同じ p を共有する）データの過分散モデル。"],
+  examples:[
+    ["打者ごとのヒット数","打者ごとの真の打率 p","n 打席中のヒット数","打率のばらつきを考えると、リーグ全体の安打数は二項より広がる。経験ベイズの古典例。"],
+    ["一腹の子のうち異常がある数","母体ごとの異常の起こりやすさ","同腹 n 匹中の異常数","毒性試験の古典例。同じ腹の子どうしは p を共有して相関する。"],
+    ["広告ごとのクリック数・病院ごとの手術成功数","広告のクリック率／病院の成功率","n 回中の成功数","A/B テストやベイズ予測（一様事前で次の n 回の成功数）として出題される。"]],
+  clue:"<b>手がかり</b>：上限 n がある「n 回中何回」型。同じグループ内の試行が同じ成功確率を共有している。",
+  quiz:{q:"p ~ U(0,1)、X | p ~ Bin(4, p) のとき、X の分布と V[X] を求めよ。",
+        a:"P(X=x) = C(4,x)·B(x+1, 5−x) = C(4,x)·x!(4−x)!/5! = 1/5（x=0,…,4 の離散一様）。V[X] = (5²−1)/12 = 2。全分散でも E[4p(1−p)] + V[4p] = 4(1/2−1/3) + 16/12 = 2/3 + 4/3 = 2。"}
+},
+{ id:"compound", name:"複合ポアソン", short:["複合","ポアソン"], sub:"S = Y₁+…+Y_N", color:"--cinnabar",
+  tag:"ランダムな個数だけ足し合わせる",
+  hier:['<i>N</i> ~ Po(λ)','<i>Y<sub>i</sub></i> ~ Exp(平均 μ) i.i.d.','<i>S</i> = <i>Y</i>₁ + … + <i>Y<sub>N</sub></i>'],
+  params:[{id:"l",label:"件数の平均 λ",min:0.5,max:15,step:0.5,val:3},{id:"mu",label:"1件の平均額 μ",min:0.5,max:5,step:0.1,val:2}],
+  discrete:false, thetaDiscrete:true, thetaName:"N", xName:"S", atom:true,
+  mixTitle:"件数 N をひく", margTitle:"N 件分の金額を足して S を得る",
+  thetaRange:p=>[0,Math.ceil(p.l+4*Math.sqrt(p.l)+1)], mixPdf:(k,p)=>poisPmf(k,p.l), mixCap:p=>null,
+  sampleTheta:p=>rpois(p.l), sampleX:(n,p)=>n>0?rgamma(n,1/p.mu):0,
+  xRange:p=>[0,p.l*p.mu+4.5*Math.sqrt(2*p.l)*p.mu+p.mu],
+  marg:(s,p)=>{if(s<=0)return 0;let t=0;const nm=Math.ceil(p.l+10*Math.sqrt(p.l)+10);for(let n=1;n<=nm;n++)t+=poisPmf(n,p.l)*gammaPdf(s,n,1/p.mu);return t;},
+  cond:(s,n,p)=>n>0?gammaPdf(s,n,1/p.mu):0,
+  comp:(s,p)=>normPdf(s,p.l*p.mu,2*p.l*p.mu*p.mu), compLabel:p=>"正規近似 N(λμ, 2λμ²)",
+  theory:p=>({mean:p.l*p.mu,within:p.l*p.mu*p.mu,between:p.l*p.mu*p.mu}),
+  dnote:p=>`成分内 E[N]V[Y] = λμ² と成分間 V[N]E[Y]² = λμ² の和で V[S] = λE[Y²]。S=0 には確率 e^{−λ} = ${f(Math.exp(-p.l),4)} の点質量があります（図の◆）。`,
+  formulas:[
+    ["平均（ワルド）",'E[<i>S</i>] = E[<i>N</i>] E[<i>Y</i>] = λμ'],
+    ["分散",'V[<i>S</i>] = E[<i>N</i>]V[<i>Y</i>] + V[<i>N</i>]E[<i>Y</i>]² = λE[<i>Y</i>²] = 2λμ²'],
+    ["積率母関数",'<i>M<sub>S</sub></i>(<i>t</i>) = exp{ λ(<i>M<sub>Y</sub></i>(<i>t</i>) − 1) }'],
+    ["条件付き分布",'<i>S</i> | <i>N</i>=<i>n</i> ~ Ga(<i>n</i>, 1/μ) (<i>n</i>≥1),   P(<i>S</i>=0) = e<sup>−λ</sup>']],
+  points:[
+    "M_S(t) = E[M_Y(t)^N] = G_N(M_Y(t)) の導出は必須。確率母関数に積率母関数を代入する形を覚える。",
+    "分散の2通りの表し方（全分散公式／λE[Y²]）が一致することを確認させる問題が多い。",
+    "Y がベルヌーイ(q) なら S ~ Po(λq)（ポアソンの間引き）。独立な複合ポアソンの和もまた複合ポアソン（再生性）。",
+    "保険の総支払額・待ち行列の総作業量など、応用分野での典型モデル。λ が大きいと正規近似が効く。"],
+  examples:[
+    ["保険会社の年間総支払額","請求件数 N","支払額の合計 S","損害保険数理の基本形。件数分布と1件あたりの損害額分布を別々にモデル化する。"],
+    ["1日の総降水量","雨が降った回数 N","雨量の合計","雨が降らない日（S=0）が正の確率で起きる点に注意。"],
+    ["店の1日の売上・ATMの出金総額","来店客数・利用件数 N","金額の合計","E[S]=E[N]E[Y]（ワルドの等式）で期待売上が出る。"]],
+  clue:"<b>手がかり</b>：「ランダムな件数」×「1件ごとのランダムな量」の合計。S=0 に点質量がある。",
+  quiz:{q:"N ~ Po(3)、Y ~ 指数分布（平均2）のとき、E[S], V[S], P(S=0) を求めよ。",
+        a:"E[S] = 3·2 = 6。E[Y²] = 2·2² = 8 なので V[S] = 3·8 = 24。P(S=0) = P(N=0) = e^{−3} ≈ 0.0498。全分散でも 3·4 + 3·4 = 24 で一致。"}
+}];
+
+/* ---------- 曼荼羅SVG ---------- */
+function buildMandala(){
+  const s=document.getElementById("mandala"),NS="http://www.w3.org/2000/svg",cx=190,cy=190;
+  const el=(t,a,parent=s)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);parent.appendChild(e);return e;};
+  el("circle",{cx,cy,r:184,fill:"none",stroke:"var(--line)","stroke-width":1});
+  el("circle",{cx,cy,r:176,fill:"none",stroke:"var(--line)","stroke-width":1,"stroke-dasharray":"2 5"});
+  for(let i=0;i<16;i++){const g=el("g",{transform:`rotate(${i*22.5} ${cx} ${cy})`});el("ellipse",{cx,cy:cy-128,rx:16,ry:40,fill:"var(--soft)",stroke:"var(--line)","stroke-width":1},g);}
+  el("circle",{cx,cy,r:150,fill:"var(--surface)",stroke:"var(--line)"});
+  const pos=[[0,-1],[1,0],[0,1],[-1,0]];
+  P.forEach((p,i)=>{const [dx,dy]=pos[i];el("line",{x1:cx,y1:cy,x2:cx+dx*92,y2:cy+dy*92,stroke:`var(${p.color})`,"stroke-width":2,"stroke-dasharray":"3 4"});});
+  P.forEach((p,i)=>{
+    const [dx,dy]=pos[i],x=cx+dx*96,y=cy+dy*96;
+    const g=el("g",{class:"petal",tabindex:0,role:"button","aria-label":p.name,"data-i":i});
+    el("circle",{class:"p",cx:x,cy:y,r:52,fill:`color-mix(in srgb, var(${p.color}) 16%, var(--surface))`,stroke:`var(${p.color})`,"stroke-width":2},g);
+    const t1=el("text",{class:"mand-text",x,y:y-8,"font-size":15},g);t1.textContent=p.short[0];
+    const t2=el("text",{class:"mand-text",x,y:y+10,"font-size":15},g);t2.textContent=p.short[1];
+    const t3=el("text",{class:"mand-sub",x,y:y+27},g);t3.textContent=p.sub;
+    g.addEventListener("click",()=>select(i,true));
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(i,true);}});
+  });
+  el("circle",{cx,cy,r:44,fill:"var(--ink)"});
+  const c1=el("text",{x:cx,y:cy-4,"text-anchor":"middle","font-family":"var(--f-display)","font-weight":800,"font-size":20,fill:"var(--surface)"});c1.textContent="混合";
+  const c2=el("text",{x:cx,y:cy+16,"text-anchor":"middle","font-family":"var(--f-mono)","font-size":8.5,fill:"var(--surface)"});c2.textContent="∫f(x|θ)π(θ)dθ";
+}
+
+/* ---------- 状態 ---------- */
+let cur=0;
+const state=P.map(p=>{const v={};p.params.forEach(q=>v[q.id]=q.val);return{v,xs:[],ths:[],lastT:null,lastX:null};});
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function draw(n){const p=P[cur],st=state[cur];for(let i=0;i<n;i++){const t=p.sampleTheta(st.v),x=p.sampleX(t,st.v);st.ths.push(t);st.xs.push(x);st.lastT=t;st.lastX=x;}if(st.ths.length>400)st.ths.splice(0,st.ths.length-400);}
+function resetSamples(){const st=state[cur];st.xs=[];st.ths=[];st.lastT=null;st.lastX=null;}
+
+/* ---------- 目盛り ---------- */
+function ticks(lo,hi,n=5){const span=hi-lo,step0=span/n,mag=Math.pow(10,Math.floor(Math.log10(step0))),r=step0/mag,step=(r<1.5?1:r<3?2:r<7?5:10)*mag;const out=[];for(let v=Math.ceil(lo/step)*step;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return out;}
+function setupCanvas(c){const r=window.devicePixelRatio||1,w=c.clientWidth,h=+(window.innerWidth<=760?c.dataset.hm:c.dataset.h);c.width=w*r;c.height=h*r;c.style.height=h+"px";const g=c.getContext("2d");g.setTransform(r,0,0,r,0,0);return{g,w,h};}
+
+function axes(g,w,h,pad,lo,hi,xs,label,ink,muted,line){
+  g.strokeStyle=line;g.lineWidth=1;g.beginPath();g.moveTo(pad.l,h-pad.b+.5);g.lineTo(w-pad.r,h-pad.b+.5);g.stroke();
+  g.fillStyle=muted;g.font="11px "+cssv("--f-mono");g.textAlign="center";g.textBaseline="top";
+  ticks(lo,hi,Math.max(3,Math.floor((w-pad.l-pad.r)/60))).forEach(v=>{const x=xs(v);g.beginPath();g.moveTo(x,h-pad.b);g.lineTo(x,h-pad.b+4);g.stroke();g.fillText(String(v),x,h-pad.b+6);});
+  g.textAlign="right";g.fillStyle=ink;g.font="600 12px "+cssv("--f-body");g.fillText(label,w-pad.r,h-pad.b+20);
+}
+
+function render(){
+  const p=P[cur],st=state[cur],v=st.v;
+  const C=cssv(p.color),ink=cssv("--ink"),muted=cssv("--muted"),line=cssv("--line"),soft=cssv("--soft");
+  /* --- 混ぜる分布 --- */
+  {const c=document.getElementById("cMix"),{g,w,h}=setupCanvas(c),pad={l:12,r:12,t:22,b:40};
+   const [lo,hi]=p.thetaRange(v),pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+   const xs=t=>pad.l+(t-lo)/(hi-lo)*pw;
+   let ys,ymax=0;
+   if(p.thetaDiscrete){for(let k=lo;k<=hi;k++)ymax=Math.max(ymax,p.mixPdf(k,v));}
+   else{for(let i=1;i<=200;i++)ymax=Math.max(ymax,p.mixPdf(lo+(hi-lo)*i/201,v));}
+   const cap=p.mixCap(v);if(cap&&ymax>cap)ymax=cap;ymax*=1.12;
+   ys=y=>h-pad.b-Math.min(y,ymax)/ymax*ph;
+   g.clearRect(0,0,w,h);
+   if(p.thetaDiscrete){const bw=pw/(hi-lo+1)*0.62;g.fillStyle=C;for(let k=lo;k<=hi;k++){const y=p.mixPdf(k,v);g.globalAlpha=(st.lastT===k)?1:0.55;g.fillRect(xs(k)-bw/2,ys(y),bw,h-pad.b-ys(y));}g.globalAlpha=1;}
+   else{g.beginPath();g.moveTo(xs(lo),h-pad.b);for(let i=0;i<=300;i++){const t=lo+(hi-lo)*i/300;g.lineTo(xs(t),ys(p.mixPdf(t,v)));}g.lineTo(xs(hi),h-pad.b);g.closePath();g.fillStyle=C;g.globalAlpha=.18;g.fill();g.globalAlpha=1;g.strokeStyle=C;g.lineWidth=2.5;
+     g.beginPath();for(let i=0;i<=300;i++){const t=lo+(hi-lo)*i/300,x=xs(t),y=ys(p.mixPdf(t,v));i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+   /* ラグ */
+   g.strokeStyle=ink;g.globalAlpha=.28;g.lineWidth=1;
+   st.ths.slice(-120).forEach(t=>{if(t<lo||t>hi)return;const x=xs(t);g.beginPath();g.moveTo(x,h-pad.b-7);g.lineTo(x,h-pad.b);g.stroke();});
+   g.globalAlpha=1;
+   if(st.lastT!==null){const t=Math.min(Math.max(st.lastT,lo),hi),x=xs(t);g.strokeStyle=ink;g.lineWidth=1.5;g.setLineDash([4,3]);g.beginPath();g.moveTo(x,pad.t-4);g.lineTo(x,h-pad.b);g.stroke();g.setLineDash([]);
+     g.fillStyle=ink;g.font="600 12px "+cssv("--f-mono");g.textBaseline="bottom";g.textAlign=x>w*0.7?"right":"left";g.fillText(`${p.thetaName}=${p.thetaDiscrete?st.lastT:f(st.lastT,2)}${st.lastT>hi?" (範囲外)":""}`,x+(x>w*0.7?-5:5),pad.t+8);}
+   axes(g,w,h,pad,lo,hi,xs,p.thetaName,ink,muted,line);}
+  /* --- 周辺分布 --- */
+  {const c=document.getElementById("cMarg"),{g,w,h}=setupCanvas(c),pad={l:12,r:12,t:16,b:40};
+   const [lo,hi]=p.xRange(v),pw=w-pad.l-pad.r,ph=h-pad.t-pad.b,N=st.xs.length;
+   g.clearRect(0,0,w,h);
+   if(p.discrete){
+     const K=hi-lo+1,cnt=new Array(K).fill(0);st.xs.forEach(x=>{if(x>=lo&&x<=hi)cnt[x-lo]++;});
+     const cw=pw/K,xs=k=>pad.l+(k-lo+0.5)*cw;
+     let ymax=0;for(let k=lo;k<=hi;k++)ymax=Math.max(ymax,p.marg(k,v),p.comp(k,v),N?cnt[k-lo]/N:0);ymax*=1.15;
+     const ys=y=>h-pad.b-Math.min(y,ymax)/ymax*ph;
+     g.fillStyle=C;g.globalAlpha=.35;const bw=Math.max(1,cw*0.8);
+     for(let k=lo;k<=hi;k++){const y=N?cnt[k-lo]/N:0;g.fillRect(xs(k)-bw/2,ys(y),bw,h-pad.b-ys(y));}
+     g.globalAlpha=1;
+     if(st.lastX!==null&&st.lastX>=lo&&st.lastX<=hi){const y=N?cnt[st.lastX-lo]/N:0;g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(xs(st.lastX)-bw/2,ys(y),bw,h-pad.b-ys(y));}
+     /* 条件付き */
+     if(st.lastT!==null){g.strokeStyle=ink;g.globalAlpha=.6;g.lineWidth=1.3;g.beginPath();for(let k=lo;k<=hi;k++){const x=xs(k),y=ys(p.cond(k,st.lastT,v));k===lo?g.moveTo(x,y):g.lineTo(x,y);}g.stroke();g.globalAlpha=1;}
+     /* 比較 */
+     g.strokeStyle=muted;g.lineWidth=1.6;g.setLineDash([5,4]);g.beginPath();for(let k=lo;k<=hi;k++){const x=xs(k),y=ys(p.comp(k,v));k===lo?g.moveTo(x,y):g.lineTo(x,y);}g.stroke();g.setLineDash([]);
+     /* 理論 */
+     g.fillStyle=C;const r=Math.max(2,Math.min(4,cw*0.28));for(let k=lo;k<=hi;k++){g.beginPath();g.arc(xs(k),ys(p.marg(k,v)),r,0,7);g.fill();}
+     axes(g,w,h,pad,lo-0.5,hi+0.5,t=>pad.l+(t-lo+0.5)*cw,p.xName,ink,muted,line);
+   }else{
+     const B=50,bwv=(hi-lo)/B,cnt=new Array(B).fill(0);let zeros=0;
+     st.xs.forEach(x=>{if(p.atom&&x===0){zeros++;return;}const b=Math.floor((x-lo)/bwv);if(b>=0&&b<B)cnt[b]++;});
+     const xs=t=>pad.l+(t-lo)/(hi-lo)*pw;
+     let ymax=0;const S=320,mv=[],cv=[];
+     for(let i=0;i<=S;i++){const t=lo+(hi-lo)*i/S;mv.push(p.marg(t,v));cv.push(p.comp(t,v));ymax=Math.max(ymax,mv[i],cv[i]);}
+     cnt.forEach(c=>ymax=Math.max(ymax,N?c/(N*bwv):0));ymax*=1.15;
+     const ys=y=>h-pad.b-Math.min(y,ymax)/ymax*ph;
+     g.fillStyle=C;g.globalAlpha=.35;
+     cnt.forEach((c,b)=>{const y=N?c/(N*bwv):0,x0=xs(lo+b*bwv),x1=xs(lo+(b+1)*bwv);g.fillRect(x0+.5,ys(y),x1-x0-1,h-pad.b-ys(y));});
+     g.globalAlpha=1;
+     if(st.lastT!==null&&!(p.atom&&st.lastT===0)){g.strokeStyle=ink;g.globalAlpha=.6;g.lineWidth=1.3;g.beginPath();for(let i=0;i<=S;i++){const t=lo+(hi-lo)*i/S,y=ys(p.cond(t,st.lastT,v));i?g.lineTo(xs(t),y):g.moveTo(xs(t),y);}g.stroke();g.globalAlpha=1;}
+     g.strokeStyle=muted;g.lineWidth=1.6;g.setLineDash([5,4]);g.beginPath();cv.forEach((y,i)=>{const x=xs(lo+(hi-lo)*i/S);i?g.lineTo(x,ys(y)):g.moveTo(x,ys(y));});g.stroke();g.setLineDash([]);
+     g.strokeStyle=C;g.lineWidth=2.6;g.beginPath();mv.forEach((y,i)=>{const x=xs(lo+(hi-lo)*i/S);i?g.lineTo(x,ys(y)):g.moveTo(x,ys(y));});g.stroke();
+     if(p.atom){const x=xs(0)+6,y=pad.t+14;g.fillStyle=C;g.beginPath();g.moveTo(x,y-7);g.lineTo(x+7,y);g.lineTo(x,y+7);g.lineTo(x-7,y);g.closePath();g.fill();
+       g.fillStyle=ink;g.font="600 12px "+cssv("--f-mono");g.textAlign="left";g.textBaseline="middle";g.fillText(`P(S=0) 理論 ${f(Math.exp(-v.l),3)} / 標本 ${N?f(zeros/N,3):"—"}`,x+12,y);}
+     if(st.lastX!==null&&st.lastX>=lo&&st.lastX<=hi){const x=xs(st.lastX);g.fillStyle=ink;g.beginPath();g.moveTo(x,h-pad.b-1);g.lineTo(x-5,h-pad.b-10);g.lineTo(x+5,h-pad.b-10);g.closePath();g.fill();}
+     axes(g,w,h,pad,lo,hi,xs,p.xName,ink,muted,line);
+   }}
+  /* --- 数値 --- */
+  const th=p.theory(v),tot=th.within+th.between,N=st.xs.length;
+  const mean=N?st.xs.reduce((a,b)=>a+b,0)/N:NaN,vr=N>1?st.xs.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(N-1):NaN;
+  const dc=document.getElementById("decomp");
+  if(isFinite(tot)){const wi=th.within/tot*100;dc.innerHTML=`<div class="d-in" style="width:${wi}%">${wi>18?"成分内 "+f(th.within,2):""}</div><div class="d-bt" style="width:${100-wi}%">${100-wi>18?"成分間 "+f(th.between,2):""}</div>`;}
+  else dc.innerHTML=`<div class="d-in" style="width:100%">分散は無限大（ν ≤ 2）</div>`;
+  document.getElementById("dnote").textContent=p.dnote(v);
+  document.getElementById("stats").innerHTML=
+   `<tr><td>平均 E[${p.xName}]</td><td>${f(th.mean)}</td><td>${N?f(mean):"—"}</td></tr>`+
+   `<tr><td>成分内 E[V[${p.xName}|${p.thetaName}]]</td><td>${f(th.within)}</td><td>—</td></tr>`+
+   `<tr><td>成分間 V[E[${p.xName}|${p.thetaName}]]</td><td>${f(th.between)}</td><td>—</td></tr>`+
+   `<tr><td>分散 V[${p.xName}]</td><td>${f(tot)}</td><td>${N>1?f(vr):"—"}</td></tr>`+
+   `<tr><td>ひいた回数</td><td></td><td>${N}</td></tr>`;
+  document.getElementById("last").textContent=st.lastT===null?"まだひいていません":`直近: ${p.thetaName} = ${p.thetaDiscrete?st.lastT:f(st.lastT,3)}  →  ${p.xName} = ${p.discrete?st.lastX:f(st.lastX,3)}`;
+  document.getElementById("compLab").textContent=p.compLabel(v);
+}
+
+/* ---------- パネル切替 ---------- */
+function select(i,scroll){
+  cur=i;const p=P[i],st=state[i];
+  document.documentElement.style.setProperty("--c",`var(${p.color})`);
+  document.querySelectorAll(".tab").forEach((t,j)=>t.setAttribute("aria-selected",j===i));
+  document.querySelectorAll(".petal").forEach((g,j)=>g.style.opacity=j===i?1:.55);
+  document.getElementById("pName").textContent=p.name;
+  document.getElementById("pTag").textContent=p.tag;
+  document.getElementById("pHier").innerHTML=p.hier.map(h=>`<span>${h}</span>`).join("");
+  document.getElementById("mixTitle").innerHTML=`${p.mixTitle} <small>θ = ${p.thetaName}</small>`;
+  document.getElementById("margTitle").textContent=p.margTitle;
+  const ctl=document.getElementById("controls");
+  ctl.innerHTML=p.params.map(q=>`<div class="ctl"><label for="s-${p.id}-${q.id}">${q.label}<output id="o-${p.id}-${q.id}">${st.v[q.id]}</output></label><input type="range" id="s-${p.id}-${q.id}" min="${q.min}" max="${q.max}" step="${q.step}" value="${st.v[q.id]}"></div>`).join("");
+  p.params.forEach(q=>{const s=document.getElementById(`s-${p.id}-${q.id}`);s.addEventListener("input",()=>{st.v[q.id]=+s.value;document.getElementById(`o-${p.id}-${q.id}`).textContent=s.value;resetSamples();draw(3000);render();});});
+  document.getElementById("formulas").innerHTML=p.formulas.map(([l,x])=>`<div><div class="lab">${l}</div><div class="fx">${x}</div></div>`).join("");
+  document.getElementById("points").innerHTML=p.points.map(x=>`<li>${x}</li>`).join("");
+  document.getElementById("examples").innerHTML=p.examples.map(([t,th,x,n])=>`<div class="excard"><h4>${t}</h4><dl><dt>θ</dt><dd>${th}</dd><dt>X</dt><dd>${x}</dd></dl><p>${n}</p></div>`).join("");
+  document.getElementById("clue").innerHTML=p.clue;
+  document.getElementById("quiz").innerHTML=`<p class="q">${p.quiz.q}</p><details><summary>解答を見る</summary><p class="ans">${p.quiz.a}</p></details>`;
+  if(!st.xs.length)draw(3000);
+  render();
+  try{history.replaceState(null,"","#"+p.id);}catch(e){}
+  if(scroll)document.getElementById("tabs").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+}
+
+const tabs=document.getElementById("tabs");
+P.forEach((p,i)=>{const b=document.createElement("button");b.className="tab";b.id="tab-"+p.id;b.setAttribute("role","tab");b.style.setProperty("--tc",`var(${p.color})`);b.innerHTML=`<span class="dot"></span>${p.name}`;b.addEventListener("click",()=>select(i));tabs.appendChild(b);});
+document.getElementById("b1").onclick=()=>{draw(1);render();};
+document.getElementById("b100").onclick=()=>{draw(100);render();};
+document.getElementById("b2000").onclick=()=>{draw(2000);render();};
+document.getElementById("bReset").onclick=()=>{resetSamples();render();};
+
+buildMandala();
+const fromHash=()=>{const k=P.findIndex(p=>"#"+p.id===location.hash);return k<0?0:k;};
+select(fromHash());
+window.addEventListener("hashchange",()=>{const k=fromHash();if(k!==cur)select(k);});
+let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(render,120);});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",render);
+new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+if(document.fonts)document.fonts.ready.then(render);
+</script>
+</body>
+</html>
